@@ -1,26 +1,28 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request
 
 app = Flask(__name__)
 
-latest_parsed_data = {}
-
 @app.route('/webhook', methods=['POST'])
 def webhook():
-    global latest_parsed_data
-    raw_data = request.data.decode('utf-8')
-    parsed_data = {}
-    for line in raw_data.strip().split('\n'):
-        if '@' in line:
-            key, value = line.split('@', 1)
-            parsed_data[key.strip()] = value.strip()
+    # Try to parse JSON
+    try:
+        json_data = request.get_json(force=True)
+    except:
+        json_data = None
 
-    latest_parsed_data = parsed_data
+    # If not JSON, read raw data as plain text
+    raw_data = request.data.decode('utf-8')
+
+    print("\n📥 Incoming Webhook Content:")
+
+    if json_data:
+        print("✅ JSON Format Detected:")
+        print(json_data)
+    else:
+        print("📄 Plain Text Message:")
+        print(raw_data)
 
     return "OK", 200
-
-@app.route('/latest_data', methods=['GET'])
-def latest_data():
-    return jsonify(latest_parsed_data)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=80)
